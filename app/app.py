@@ -3,6 +3,8 @@
 # Green Meridian Theme
 # ============================================================
 
+import re
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -29,10 +31,37 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+
+# ============================================================
+# Helper: render raw HTML safely
+# ------------------------------------------------------------
+# Streamlit's st.markdown() treats any line indented with 4+
+# spaces as a Markdown code block, even with unsafe_allow_html
+# =True. Since our HTML strings are built inside indented
+# Python blocks (for-loops / with-blocks), the f-strings carry
+# that indentation along with them.
+#
+# dedent() alone isn't enough: whenever an f-string conditional
+# evaluates to '' (e.g. the "⭐ อันดับ 1" badge on non-top rows),
+# that line becomes blank, and Markdown always treats a blank
+# line as the end of an HTML block — regardless of indentation.
+# The remaining lines then start a new block the parser doesn't
+# trust as HTML, so it falls back to showing raw text.
+#
+# Collapsing every run of whitespace (including newlines) down
+# to a single space removes blank lines and indentation at the
+# same time, so this can't happen no matter how the f-string
+# branches.
+# ============================================================
+def render_html(html: str):
+    collapsed = re.sub(r"\s+", " ", html).strip()
+    st.markdown(collapsed, unsafe_allow_html=True)
+
+
 # ============================================================
 # Green Meridian Theme — CSS
 # ============================================================
-st.markdown(
+render_html(
     """
     <style>
     :root{
@@ -73,10 +102,21 @@ st.markdown(
     section[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] > div,
     section[data-testid="stSidebar"] input,
     section[data-testid="stSidebar"] textarea{
-        background: rgba(255,255,255,0.08) !important;
-        border: 1px solid rgba(255,255,255,0.25) !important;
-        color: #ffffff !important;
+        background: #ffffff !important;
+        border: 1px solid rgba(255,255,255,0.35) !important;
+        color: var(--ink) !important;
         border-radius: 12px !important;
+    }
+    /* placeholder text should stay readable but muted */
+    section[data-testid="stSidebar"] input::placeholder,
+    section[data-testid="stSidebar"] textarea::placeholder{
+        color: #6b8f7f !important;
+        opacity: 1 !important;
+    }
+    /* dropdown menu options (opens in a portal, not inside the sidebar) */
+    div[data-baseweb="popover"] li,
+    div[data-baseweb="popover"] div{
+        color: var(--ink) !important;
     }
     section[data-testid="stSidebar"] label p{
         color: var(--meridian-300) !important;
@@ -287,8 +327,7 @@ st.markdown(
         .rank-pill{ min-width: 28px; height:28px; font-size:.82rem; }
     }
     </style>
-    """,
-    unsafe_allow_html=True,
+    """
 )
 
 # ============================================================
@@ -308,7 +347,7 @@ if "search_meta" not in st.session_state:
 # ============================================================
 # Hero header
 # ============================================================
-st.markdown(
+render_html(
     """
     <div class="hero">
         <span class="badge">🌿 SU FREE ELECTIVE ADVISOR</span>
@@ -316,8 +355,7 @@ st.markdown(
         <p>ค้นหาวิชาเสรีที่เหมาะกับคุณ โดยไม่ชนตารางเรียน ไม่ชนสอบกลางภาค/ปลายภาค
         พร้อมจัดอันดับด้วย TF-IDF Cosine Similarity และ Item-Based Collaborative Filtering</p>
     </div>
-    """,
-    unsafe_allow_html=True,
+    """
 )
 
 # ============================================================
@@ -505,15 +543,14 @@ if submitted:
 meta = st.session_state.search_meta
 
 if meta is None:
-    st.markdown(
+    render_html(
         """
         <div class="m-card">
             <b>👋 ยินดีต้อนรับ</b><br>
             เลือกสาขา ภาคการศึกษา และกรอกคำค้นหาความสนใจทางด้านซ้าย
-            จากนั้นกดปุ่ม <b>“ค้นหาวิชาเสรี”</b> เพื่อรับคำแนะนำวิชาเสรีที่ไม่ชนตารางเรียนของคุณ
+            จากนั้นกดปุ่ม <b>"ค้นหาวิชาเสรี"</b> เพื่อรับคำแนะนำวิชาเสรีที่ไม่ชนตารางเรียนของคุณ
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
     st.stop()
 
@@ -546,7 +583,9 @@ with tab_result:
     if result is None or len(result) == 0:
         st.info("ไม่พบวิชาเสรีที่สามารถลงทะเบียนได้ตามเงื่อนไขที่กำหนด")
     else:
-        st.markdown('<div class="section-title"><span class="dot"></span>วิชาเสรีที่แนะนำ เรียงตามคะแนน</div>', unsafe_allow_html=True)
+        render_html(
+            '<div class="section-title"><span class="dot"></span>วิชาเสรีที่แนะนำ เรียงตามคะแนน</div>'
+        )
 
         max_score = max(result["cosine_score"].max(), 1e-9)
 
@@ -573,7 +612,7 @@ with tab_result:
             else:
                 final_html = '<span class="meta-chip">🧪 Final: ไม่มีสอบ</span>'
 
-            st.markdown(
+            render_html(
                 f"""
                 <div class="rank-card {top1}">
                     <div style="display:flex; align-items:center; flex-wrap:wrap; gap:.5rem;">
@@ -590,8 +629,7 @@ with tab_result:
                     </div>
                     <div class="score-bar-wrap"><div class="score-bar-fill" style="width:{bar_pct}%;"></div></div>
                 </div>
-                """,
-                unsafe_allow_html=True,
+                """
             )
 
         st.download_button(
@@ -603,7 +641,9 @@ with tab_result:
 
 # ---------------- Tab: Mandatory courses ----------------
 with tab_mandatory:
-    st.markdown('<div class="section-title"><span class="dot"></span>วิชาบังคับที่ใช้ตรวจสอบ</div>', unsafe_allow_html=True)
+    render_html(
+        '<div class="section-title"><span class="dot"></span>วิชาบังคับที่ใช้ตรวจสอบ</div>'
+    )
     if mandatory_courses:
         rows = []
         for cid, c in mandatory_courses.items():
@@ -613,7 +653,9 @@ with tab_mandatory:
 
 # ---------------- Tab: Filter log ----------------
 with tab_filter:
-    st.markdown('<div class="section-title"><span class="dot"></span>ตรวจสอบตารางเรียน / Midterm / Final</div>', unsafe_allow_html=True)
+    render_html(
+        '<div class="section-title"><span class="dot"></span>ตรวจสอบตารางเรียน / Midterm / Final</div>'
+    )
     if filter_log:
         for f in filter_log:
             status = '<span class="pass-tag">✅ ผ่าน</span>' if f["passed"] else '<span class="fail-tag">❌ ไม่ผ่าน</span>'
@@ -622,13 +664,14 @@ with tab_filter:
                 reasons_html = "<ul style='margin:.3rem 0 0 1.1rem;'>" + "".join(
                     f"<li style='font-size:.85rem;color:#7a4633;'>{r}</li>" for r in f["reasons"]
                 ) + "</ul>"
-            st.markdown(
+            render_html(
                 f"""
                 <div class="m-card">
                     <span class="course-code">{f['course_id']}</span>
                     <b>{f['name']}</b> — {status}
                     {reasons_html}
                 </div>
-                """,
-                unsafe_allow_html=True,
+                """
             )
+
+
