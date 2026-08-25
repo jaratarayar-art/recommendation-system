@@ -293,8 +293,21 @@ render_html(
         padding: .8rem 1rem;
         box-shadow: 0 10px 24px -18px rgba(10,92,63,0.35);
     }
+    div[data-testid="stMetricLabel"]{
+        color: var(--meridian-700) !important;
+        font-weight: 700 !important;
+        opacity: 1 !important;
+    }
+    div[data-testid="stMetricLabel"] p{
+        color: var(--meridian-700) !important;
+        font-weight: 700 !important;
+    }
     div[data-testid="stMetricValue"]{
-        color: var(--meridian-800);
+        color: var(--ink);
+        font-weight: 800;
+        white-space: normal;
+        overflow-wrap: break-word;
+        line-height: 1.2;
     }
 
     /* ---------- Tabs ---------- */
@@ -325,6 +338,26 @@ render_html(
         .hero h1{ font-size: 1.3rem; }
         .meta-row{ font-size: .78rem; }
         .rank-pill{ min-width: 28px; height:28px; font-size:.82rem; }
+
+        /* 4 metric boxes: wrap into a 2x2 grid instead of squeezing
+           into one row, and shrink text so it never gets cut off */
+        div[data-testid="stHorizontalBlock"]:has(div[data-testid="stMetric"]){
+            flex-wrap: wrap !important;
+            gap: .6rem !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(div[data-testid="stMetric"]) > div{
+            flex: 1 1 45% !important;
+            min-width: 45% !important;
+        }
+        div[data-testid="stMetric"]{
+            padding: .7rem .8rem;
+        }
+        div[data-testid="stMetricLabel"] p{
+            font-size: .78rem !important;
+        }
+        div[data-testid="stMetricValue"]{
+            font-size: 1.25rem !important;
+        }
     }
     </style>
     """
@@ -673,5 +706,3 @@ with tab_filter:
                 </div>
                 """
             )
-
-
