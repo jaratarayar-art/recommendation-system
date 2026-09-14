@@ -406,9 +406,9 @@ with st.sidebar:
 
         semester = st.radio(
             "ภาคการศึกษา",
-            options=["1", "2"],
+            options=["ต้น", "ปลาย"],
             horizontal=True,
-            format_func=lambda s: f"เทอม {s}",
+            format_func=lambda s: f"ภาคการศึกษา {s}",
         )
 
         st.markdown("**คำค้นหาความสนใจ (3 คำ)**")
