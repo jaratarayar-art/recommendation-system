@@ -412,6 +412,10 @@ if "valid_courses" not in st.session_state:
     st.session_state.valid_courses = None
 if "search_meta" not in st.session_state:
     st.session_state.search_meta = None
+if "satisfaction_rating" not in st.session_state:
+    st.session_state.satisfaction_rating = None
+if "satisfaction_comment" not in st.session_state:
+    st.session_state.satisfaction_comment = ""
 
 # ============================================================
 # Hero header
@@ -600,6 +604,9 @@ if submitted:
     if not (keyword1 or keyword2 or keyword3):
         st.warning("⚠️ กรุณากรอกคำค้นหาความสนใจอย่างน้อย 1 คำ เพื่อผลลัพธ์ที่แม่นยำขึ้น")
 
+    st.session_state.satisfaction_rating = None
+    st.session_state.satisfaction_comment = ""
+
     with st.spinner("กำลังประมวลผล TF-IDF และ Collaborative Filtering..."):
         payload, errors = run_recommendation(major, semester, keyword1, keyword2, keyword3)
 
@@ -722,6 +729,34 @@ with tab_result:
             file_name="recommended_electives.csv",
             mime="text/csv",
         )
+
+        st.divider()
+        render_html(
+            '<div class="section-title"><span class="dot"></span>สำรวจความพึงพอใจ</div>'
+        )
+        st.caption("ช่วยบอกเราหน่อยว่าผลการแนะนำวิชาครั้งนี้เป็นอย่างไร")
+
+        with st.form("satisfaction_form"):
+            rating = st.radio(
+                "ให้คะแนนความพึงพอใจ",
+                options=[1, 2, 3, 4, 5],
+                format_func=lambda score: "★" * score,
+                horizontal=True,
+            )
+            comment = st.text_area(
+                "ข้อเสนอแนะเพิ่มเติม (ไม่บังคับ)",
+                placeholder="บอกเราได้ว่าควรปรับปรุงอะไร",
+            )
+            feedback_submitted = st.form_submit_button("ส่งแบบประเมิน")
+
+        if feedback_submitted:
+            st.session_state.satisfaction_rating = rating
+            st.session_state.satisfaction_comment = comment
+            st.success("ขอบคุณสำหรับความคิดเห็นของคุณ")
+        elif st.session_state.satisfaction_rating is not None:
+            st.info(
+                f"คุณให้คะแนนความพึงพอใจ {'★' * st.session_state.satisfaction_rating} แล้ว"
+            )
 
 # ---------------- Tab: Mandatory courses ----------------
 with tab_mandatory:
