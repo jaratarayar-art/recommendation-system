@@ -799,6 +799,19 @@ if "satisfaction_rating" not in st.session_state:
     st.session_state.satisfaction_rating = None
 if "satisfaction_comment" not in st.session_state:
     st.session_state.satisfaction_comment = ""
+if "satisfaction_submitted" not in st.session_state:
+    st.session_state.satisfaction_submitted = False
+if "satisfaction_reset_requested" not in st.session_state:
+    st.session_state.satisfaction_reset_requested = False
+
+
+def reset_satisfaction_form_state():
+    for index in range(1, len(SATISFACTION_TOPICS) + 1):
+        st.session_state.pop(f"satisfaction_topic_{index}", None)
+    st.session_state.pop("satisfaction_comment_input", None)
+    st.session_state.satisfaction_rating = None
+    st.session_state.satisfaction_comment = ""
+    st.session_state.satisfaction_submitted = False
 
 # ============================================================
 # Hero header
@@ -813,6 +826,7 @@ render_html(
     </div>
     """
 )
+st.info("แนะนำให้เปลี่ยนธีมของ Streamlit เป็น Light mode เพื่อให้อ่านข้อความและใช้งานได้ชัดเจนที่สุด")
 
 average_rating, total_reviews, topic_averages = get_feedback_summary()
 if total_reviews:
@@ -994,8 +1008,7 @@ if submitted:
     if not (keyword1 or keyword2 or keyword3):
         st.warning("⚠️ กรุณากรอกคำค้นหาความสนใจอย่างน้อย 1 คำ เพื่อผลลัพธ์ที่แม่นยำขึ้น")
 
-    st.session_state.satisfaction_rating = None
-    st.session_state.satisfaction_comment = ""
+    reset_satisfaction_form_state()
 
     with st.spinner("กำลังประมวลผล TF-IDF และ Collaborative Filtering..."):
         payload, errors = run_recommendation(major, semester, keyword1, keyword2, keyword3)
@@ -1037,6 +1050,10 @@ if meta is None:
 
 
 def render_satisfaction_survey(result, search_meta):
+    if st.session_state.satisfaction_reset_requested:
+        reset_satisfaction_form_state()
+        st.session_state.satisfaction_reset_requested = False
+
     st.divider()
     render_html(
         '<div class="section-title"><span class="dot"></span>สำรวจความพึงพอใจ</div>'
@@ -1057,12 +1074,17 @@ def render_satisfaction_survey(result, search_meta):
         comment = st.text_area(
             "ข้อเสนอแนะเพิ่มเติม (ไม่บังคับ)",
             placeholder="บอกเราได้ว่าควรปรับปรุงอะไร",
+            key="satisfaction_comment_input",
         )
-        feedback_submitted = st.form_submit_button("ส่งแบบประเมิน")
+        feedback_submitted = st.form_submit_button(
+            "ส่งแบบประเมิน",
+            disabled=st.session_state.satisfaction_submitted,
+        )
 
-    if feedback_submitted:
+    if feedback_submitted and not st.session_state.satisfaction_submitted:
         st.session_state.satisfaction_rating = round(sum(topic_ratings) / len(topic_ratings))
         st.session_state.satisfaction_comment = comment
+        st.session_state.satisfaction_submitted = True
         recommended_courses = ""
         if result is not None and len(result):
             recommended_courses = ", ".join(result["course_id"].astype(str))
@@ -1083,6 +1105,11 @@ def render_satisfaction_survey(result, search_meta):
         st.info(
             f"คุณให้คะแนนความพึงพอใจ {'★' * st.session_state.satisfaction_rating} แล้ว"
         )
+
+    if st.session_state.satisfaction_submitted:
+        if st.button("เริ่มรีวิวใหม่", key="reset_satisfaction_button"):
+            st.session_state.satisfaction_reset_requested = True
+            st.rerun()
 
     average_rating, total_reviews, topic_averages = get_feedback_summary()
     if total_reviews:
