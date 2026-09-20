@@ -956,12 +956,11 @@ def render_satisfaction_survey(result, search_meta):
 
     average_rating, total_reviews = get_feedback_summary()
     if total_reviews:
-        st.caption(
-            f"คะแนนความพึงพอใจเฉลี่ย: {average_rating:.2f}/5 "
-            f"จากผู้ประเมิน {total_reviews} คน"
-        )
+        average_col, review_col = st.columns(2)
+        average_col.metric("คะแนนความพึงพอใจเฉลี่ย", f"{average_rating:.2f} / 5")
+        review_col.metric("จำนวนผู้ประเมิน", f"{total_reviews} คน")
     else:
-        st.caption("ยังไม่มีข้อมูลคะแนนความพึงพอใจ")
+        st.info("ยังไม่มีข้อมูลคะแนนความพึงพอใจ")
 
 
 # --- Summary metrics ---
