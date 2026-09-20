@@ -913,6 +913,57 @@ if meta is None:
     )
     st.stop()
 
+
+def render_satisfaction_survey(result, search_meta):
+    st.divider()
+    render_html(
+        '<div class="section-title"><span class="dot"></span>สำรวจความพึงพอใจ</div>'
+    )
+    st.caption("ช่วยบอกเราหน่อยว่าผลการแนะนำวิชาครั้งนี้เป็นอย่างไร")
+
+    with st.form("satisfaction_form"):
+        rating = st.radio(
+            "ให้คะแนนความพึงพอใจ",
+            options=[1, 2, 3, 4, 5],
+            format_func=lambda score: "★" * score,
+            horizontal=True,
+        )
+        comment = st.text_area(
+            "ข้อเสนอแนะเพิ่มเติม (ไม่บังคับ)",
+            placeholder="บอกเราได้ว่าควรปรับปรุงอะไร",
+        )
+        feedback_submitted = st.form_submit_button("ส่งแบบประเมิน")
+
+    if feedback_submitted:
+        st.session_state.satisfaction_rating = rating
+        st.session_state.satisfaction_comment = comment
+        recommended_courses = ""
+        if result is not None and len(result):
+            recommended_courses = ", ".join(result["course_id"].astype(str))
+        save_feedback(
+            rating=rating,
+            comment=comment,
+            major=search_meta["major"],
+            semester=search_meta["semester"],
+            keywords=", ".join(keyword for keyword in search_meta["keywords"] if keyword),
+            recommended_courses=recommended_courses,
+        )
+        st.success("ขอบคุณสำหรับความคิดเห็นของคุณ")
+    elif st.session_state.satisfaction_rating is not None:
+        st.info(
+            f"คุณให้คะแนนความพึงพอใจ {'★' * st.session_state.satisfaction_rating} แล้ว"
+        )
+
+    average_rating, total_reviews = get_feedback_summary()
+    if total_reviews:
+        st.caption(
+            f"คะแนนความพึงพอใจเฉลี่ย: {average_rating:.2f}/5 "
+            f"จากผู้ประเมิน {total_reviews} คน"
+        )
+    else:
+        st.caption("ยังไม่มีข้อมูลคะแนนความพึงพอใจ")
+
+
 # --- Summary metrics ---
 mandatory_courses = st.session_state.mandatory_courses
 filter_log = st.session_state.filter_log
@@ -941,6 +992,7 @@ tab_result, tab_mandatory, tab_filter = st.tabs(
 with tab_result:
     if result is None or len(result) == 0:
         st.info("ไม่พบวิชาเสรีที่สามารถลงทะเบียนได้ตามเงื่อนไขที่กำหนด")
+        render_satisfaction_survey(result, meta)
     else:
         render_html(
             '<div class="section-title"><span class="dot"></span>วิชาเสรีที่แนะนำ เรียงตามคะแนน</div>'
@@ -998,50 +1050,7 @@ with tab_result:
             mime="text/csv",
         )
 
-        st.divider()
-        render_html(
-            '<div class="section-title"><span class="dot"></span>สำรวจความพึงพอใจ</div>'
-        )
-        st.caption("ช่วยบอกเราหน่อยว่าผลการแนะนำวิชาครั้งนี้เป็นอย่างไร")
-
-        with st.form("satisfaction_form"):
-            rating = st.radio(
-                "ให้คะแนนความพึงพอใจ",
-                options=[1, 2, 3, 4, 5],
-                format_func=lambda score: "★" * score,
-                horizontal=True,
-            )
-            comment = st.text_area(
-                "ข้อเสนอแนะเพิ่มเติม (ไม่บังคับ)",
-                placeholder="บอกเราได้ว่าควรปรับปรุงอะไร",
-            )
-            feedback_submitted = st.form_submit_button("ส่งแบบประเมิน")
-
-        if feedback_submitted:
-            st.session_state.satisfaction_rating = rating
-            st.session_state.satisfaction_comment = comment
-            save_feedback(
-                rating=rating,
-                comment=comment,
-                major=meta["major"],
-                semester=meta["semester"],
-                keywords=", ".join(keyword for keyword in meta["keywords"] if keyword),
-                recommended_courses=", ".join(result["course_id"].astype(str)),
-            )
-            st.success("ขอบคุณสำหรับความคิดเห็นของคุณ")
-        elif st.session_state.satisfaction_rating is not None:
-            st.info(
-                f"คุณให้คะแนนความพึงพอใจ {'★' * st.session_state.satisfaction_rating} แล้ว"
-            )
-
-        average_rating, total_reviews = get_feedback_summary()
-        if total_reviews:
-            st.caption(
-                f"คะแนนความพึงพอใจเฉลี่ย: {average_rating:.2f}/5 "
-                f"จากผู้ประเมิน {total_reviews} คน"
-            )
-        else:
-            st.caption("ยังไม่มีข้อมูลคะแนนความพึงพอใจ")
+        render_satisfaction_survey(result, meta)
 
 # ---------------- Tab: Mandatory courses ----------------
 with tab_mandatory:
