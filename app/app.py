@@ -20,6 +20,9 @@ from course_data import (
     class_conflict,
     exam_conflict,
 )
+from feedback_database import initialize_database, get_feedback_summary, save_feedback
+
+initialize_database()
 
 # ============================================================
 # Page config
@@ -1017,11 +1020,28 @@ with tab_result:
         if feedback_submitted:
             st.session_state.satisfaction_rating = rating
             st.session_state.satisfaction_comment = comment
+            save_feedback(
+                rating=rating,
+                comment=comment,
+                major=meta["major"],
+                semester=meta["semester"],
+                keywords=", ".join(keyword for keyword in meta["keywords"] if keyword),
+                recommended_courses=", ".join(result["course_id"].astype(str)),
+            )
             st.success("ขอบคุณสำหรับความคิดเห็นของคุณ")
         elif st.session_state.satisfaction_rating is not None:
             st.info(
                 f"คุณให้คะแนนความพึงพอใจ {'★' * st.session_state.satisfaction_rating} แล้ว"
             )
+
+        average_rating, total_reviews = get_feedback_summary()
+        if total_reviews:
+            st.caption(
+                f"คะแนนความพึงพอใจเฉลี่ย: {average_rating:.2f}/5 "
+                f"จากผู้ประเมิน {total_reviews} คน"
+            )
+        else:
+            st.caption("ยังไม่มีข้อมูลคะแนนความพึงพอใจ")
 
 # ---------------- Tab: Mandatory courses ----------------
 with tab_mandatory:
