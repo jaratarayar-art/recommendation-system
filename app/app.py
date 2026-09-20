@@ -433,6 +433,72 @@ render_html(
     div[data-baseweb="popover"] div{
         color: var(--ink) !important;
     }
+
+    /* ---------- Streamlit dark theme ---------- */
+    html[data-theme="dark"],
+    body[data-theme="dark"],
+    [data-theme="dark"]{
+        --ink:#e8f5ef;
+        --meridian-50:#10231d;
+        --meridian-100:#18382c;
+        --meridian-700:#72dfae;
+        --meridian-800:#91ebc2;
+    }
+    [data-theme="dark"] .stApp,
+    [data-theme="dark"] [data-testid="stAppViewContainer"]{
+        background: #0b1512 !important;
+        color: #e8f5ef !important;
+    }
+    [data-theme="dark"] .m-card,
+    [data-theme="dark"] .rank-card,
+    [data-theme="dark"] div[data-testid="stMetric"]{
+        background: #14231e !important;
+        border-color: #2b5141 !important;
+        color: #e8f5ef !important;
+    }
+    [data-theme="dark"] .course-name,
+    [data-theme="dark"] .meta-row,
+    [data-theme="dark"] .section-title,
+    [data-theme="dark"] div[data-testid="stMetricValue"],
+    [data-theme="dark"] div[data-testid="stMetricLabel"],
+    [data-theme="dark"] div[data-testid="stMetricLabel"] p,
+    [data-theme="dark"] .stMarkdown,
+    [data-theme="dark"] .stCaption,
+    [data-theme="dark"] label,
+    [data-theme="dark"] label p{
+        color: #e8f5ef !important;
+    }
+    [data-theme="dark"] .meta-chip,
+    [data-theme="dark"] .course-code{
+        background: #1d4032 !important;
+        border-color: #3b755a !important;
+        color: #b9f5d5 !important;
+    }
+    [data-theme="dark"] section[data-testid="stSidebar"] input,
+    [data-theme="dark"] section[data-testid="stSidebar"] textarea,
+    [data-theme="dark"] section[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] > div,
+    [data-theme="dark"] div[data-baseweb="select"] > div,
+    [data-theme="dark"] textarea,
+    [data-theme="dark"] input{
+        background: #172b24 !important;
+        color: #f2fff8 !important;
+        border-color: #4b8066 !important;
+    }
+    [data-theme="dark"] input::placeholder,
+    [data-theme="dark"] textarea::placeholder{
+        color: #a6c7b5 !important;
+        opacity: 1 !important;
+    }
+    [data-theme="dark"] div[data-baseweb="popover"],
+    [data-theme="dark"] div[data-baseweb="popover"] li,
+    [data-theme="dark"] div[data-baseweb="popover"] div{
+        background: #172b24 !important;
+        color: #f2fff8 !important;
+    }
+    [data-theme="dark"] div[data-baseweb="tab-list"] button,
+    [data-theme="dark"] button[data-baseweb="tab"]{
+        color: #b9f5d5 !important;
+    }
     section[data-testid="stSidebar"] label p{
         color: var(--meridian-300) !important;
         font-weight: 600;
@@ -632,6 +698,44 @@ render_html(
     }
     div[data-baseweb="tab-highlight"]{
         background-color: var(--meridian-500) !important;
+    }
+
+    /* Use Streamlit's active theme variables so light and dark mode stay readable. */
+    .stApp,
+    [data-testid="stAppViewContainer"]{
+        color: var(--text-color, var(--ink)) !important;
+    }
+    .m-card,
+    .rank-card,
+    div[data-testid="stMetric"],
+    details{
+        background: var(--secondary-background-color, #ffffff) !important;
+        color: var(--text-color, var(--ink)) !important;
+    }
+    .course-name,
+    .meta-row,
+    .section-title,
+    div[data-testid="stMetricValue"],
+    div[data-testid="stMetricLabel"],
+    div[data-testid="stMetricLabel"] p,
+    .stMarkdown,
+    .stCaption,
+    .m-card,
+    .rank-card,
+    details,
+    .rank-card div[style*="color:"]{
+        color: var(--text-color, var(--ink)) !important;
+    }
+    .meta-chip{
+        background: var(--secondary-background-color, #f0fbf5) !important;
+        color: var(--text-color, var(--ink)) !important;
+    }
+    section[data-testid="stSidebar"] input,
+    section[data-testid="stSidebar"] textarea,
+    div[data-baseweb="select"] > div,
+    textarea,
+    input{
+        color: var(--text-color, var(--ink)) !important;
     }
 
     /* ---------- Expander ---------- */
