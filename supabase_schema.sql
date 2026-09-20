@@ -29,11 +29,17 @@ alter table public.satisfaction_feedback
 
 alter table public.satisfaction_feedback enable row level security;
 
+drop policy if exists "Allow anonymous feedback insert"
+on public.satisfaction_feedback;
+
 create policy "Allow anonymous feedback insert"
 on public.satisfaction_feedback
 for insert
 to anon
 with check (true);
+
+drop policy if exists "Allow anonymous feedback summary"
+on public.satisfaction_feedback;
 
 create policy "Allow anonymous feedback summary"
 on public.satisfaction_feedback
