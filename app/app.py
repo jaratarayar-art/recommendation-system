@@ -361,6 +361,17 @@ KEYWORD_SUGGESTIONS = [
    "การประยุกต์ทางเคมี",
 ]
 
+SATISFACTION_TOPICS = [
+    "ระบบสามารถแนะนำคู่รายวิชาเลือกเสรีที่มีความเหมาะสมได้",
+    "คู่รายวิชาเลือกเสรีที่ระบบแนะนำมีความสอดคล้องกันอย่างเหมาะสม",
+    "ผลการแนะนำคู่รายวิชามีความสอดคล้องกับความสนใจของผู้ใช้งาน",
+    "ระบบช่วยให้สามารถวางแผนการลงทะเบียนเรียนรายวิชาเลือกเสรีได้สะดวกขึ้น",
+    "ระบบช่วยสนับสนุนการตัดสินใจเลือกลงทะเบียนรายวิชาเลือกเสรี",
+    "ระบบแนะนำมีขั้นตอนการใช้งานที่เข้าใจง่าย",
+    "ผู้ใช้งานมีความพึงพอใจต่อระบบแนะนำคู่รายวิชาเลือกเสรีโดยรวม",
+    "ระบบสามารถแสดงผลการแนะนำคู่รายวิชาได้อย่างชัดเจน",
+]
+
 
 # ============================================================
 # Green Meridian Theme — CSS
@@ -699,7 +710,7 @@ render_html(
     """
 )
 
-average_rating, total_reviews = get_feedback_summary()
+average_rating, total_reviews, topic_averages = get_feedback_summary()
 if total_reviews:
     st.markdown("### 📊 ภาพรวมความพึงพอใจของผู้ใช้งาน")
     average_col, review_col = st.columns(2)
@@ -929,12 +940,16 @@ def render_satisfaction_survey(result, search_meta):
     st.caption("ช่วยบอกเราหน่อยว่าผลการแนะนำวิชาครั้งนี้เป็นอย่างไร")
 
     with st.form("satisfaction_form"):
-        rating = st.radio(
-            "ให้คะแนนความพึงพอใจ",
-            options=[1, 2, 3, 4, 5],
-            format_func=lambda score: "★" * score,
-            horizontal=True,
-        )
+        topic_ratings = []
+        for index, topic in enumerate(SATISFACTION_TOPICS, start=1):
+            topic_ratings.append(
+                st.selectbox(
+                    f"{index}. {topic}",
+                    options=[1, 2, 3, 4, 5],
+                    format_func=lambda score: f"{'★' * score} ({score}/5)",
+                    key=f"satisfaction_topic_{index}",
+                )
+            )
         comment = st.text_area(
             "ข้อเสนอแนะเพิ่มเติม (ไม่บังคับ)",
             placeholder="บอกเราได้ว่าควรปรับปรุงอะไร",
@@ -942,20 +957,20 @@ def render_satisfaction_survey(result, search_meta):
         feedback_submitted = st.form_submit_button("ส่งแบบประเมิน")
 
     if feedback_submitted:
-        st.session_state.satisfaction_rating = rating
+        st.session_state.satisfaction_rating = round(sum(topic_ratings) / len(topic_ratings))
         st.session_state.satisfaction_comment = comment
         recommended_courses = ""
         if result is not None and len(result):
             recommended_courses = ", ".join(result["course_id"].astype(str))
         save_feedback(
-            rating=rating,
+            topic_ratings=topic_ratings,
             comment=comment,
             major=search_meta["major"],
             semester=search_meta["semester"],
             keywords=", ".join(keyword for keyword in search_meta["keywords"] if keyword),
             recommended_courses=recommended_courses,
         )
-        average_rating, total_reviews = get_feedback_summary()
+        average_rating, total_reviews, _ = get_feedback_summary()
         st.success(
             f"ขอบคุณสำหรับความคิดเห็นของคุณ ตอนนี้คะแนนเฉลี่ยคือ "
             f"{average_rating:.2f}/5 จาก {total_reviews} รีวิว"
@@ -965,11 +980,23 @@ def render_satisfaction_survey(result, search_meta):
             f"คุณให้คะแนนความพึงพอใจ {'★' * st.session_state.satisfaction_rating} แล้ว"
         )
 
-    average_rating, total_reviews = get_feedback_summary()
+    average_rating, total_reviews, topic_averages = get_feedback_summary()
     if total_reviews:
         average_col, review_col = st.columns(2)
         average_col.metric("คะแนนความพึงพอใจเฉลี่ย", f"{average_rating:.2f} / 5")
         review_col.metric("จำนวนผู้ประเมิน", f"{total_reviews} คน")
+        with st.expander("ดูคะแนนเฉลี่ยรายหัวข้อ"):
+            for start in range(0, len(SATISFACTION_TOPICS), 2):
+                topic_cols = st.columns(2)
+                for offset, topic_col in enumerate(topic_cols):
+                    topic_index = start + offset
+                    if topic_index < len(SATISFACTION_TOPICS):
+                        topic_average = topic_averages[topic_index]
+                        topic_col.metric(
+                            f"ข้อ {topic_index + 1}",
+                            f"{topic_average:.2f} / 5" if topic_average else "ยังไม่มีข้อมูล",
+                        )
+                        topic_col.caption(SATISFACTION_TOPICS[topic_index])
     else:
         st.info("ยังไม่มีข้อมูลคะแนนความพึงพอใจ")
 
