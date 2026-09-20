@@ -699,6 +699,13 @@ render_html(
     """
 )
 
+average_rating, total_reviews = get_feedback_summary()
+if total_reviews:
+    st.markdown("### 📊 ภาพรวมความพึงพอใจของผู้ใช้งาน")
+    average_col, review_col = st.columns(2)
+    average_col.metric("คะแนนเฉลี่ย", f"{average_rating:.2f} / 5")
+    review_col.metric("จำนวนรีวิว", f"{total_reviews} คน")
+
 # ============================================================
 # Sidebar — input form
 # ============================================================
@@ -948,7 +955,11 @@ def render_satisfaction_survey(result, search_meta):
             keywords=", ".join(keyword for keyword in search_meta["keywords"] if keyword),
             recommended_courses=recommended_courses,
         )
-        st.success("ขอบคุณสำหรับความคิดเห็นของคุณ")
+        average_rating, total_reviews = get_feedback_summary()
+        st.success(
+            f"ขอบคุณสำหรับความคิดเห็นของคุณ ตอนนี้คะแนนเฉลี่ยคือ "
+            f"{average_rating:.2f}/5 จาก {total_reviews} รีวิว"
+        )
     elif st.session_state.satisfaction_rating is not None:
         st.info(
             f"คุณให้คะแนนความพึงพอใจ {'★' * st.session_state.satisfaction_rating} แล้ว"
