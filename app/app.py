@@ -869,6 +869,8 @@ if "satisfaction_submitted" not in st.session_state:
     st.session_state.satisfaction_submitted = False
 if "satisfaction_reset_requested" not in st.session_state:
     st.session_state.satisfaction_reset_requested = False
+if "mobile_sidebar_closed" not in st.session_state:
+    st.session_state.mobile_sidebar_closed = False
 
 
 def reset_satisfaction_form_state():
@@ -893,6 +895,30 @@ render_html(
     """
 )
 st.info("แนะนำให้เปลี่ยนธีมของ Streamlit เป็น Light mode เพื่อให้อ่านข้อความและใช้งานได้ชัดเจนที่สุด")
+
+if st.session_state.mobile_sidebar_closed:
+    render_html(
+        """
+        <style>
+        @media (max-width: 900px){
+            section[data-testid="stSidebar"]{
+                width: 0 !important;
+                min-width: 0 !important;
+                transform: translateX(-100%) !important;
+                overflow: hidden !important;
+            }
+            section[data-testid="stSidebar"] > div{
+                width: 0 !important;
+                min-width: 0 !important;
+                overflow: hidden !important;
+            }
+        }
+        </style>
+        """
+    )
+    if st.button("เปิดช่องค้นหาอีกครั้ง", key="reopen_mobile_search"):
+        st.session_state.mobile_sidebar_closed = False
+        st.rerun()
 
 average_rating, total_reviews, topic_averages = get_feedback_summary()
 if total_reviews:
@@ -1095,6 +1121,9 @@ if submitted:
         st.session_state.results = payload.get("result")
         for e in errors:
             st.error(f"❌ {e}")
+
+    st.session_state.mobile_sidebar_closed = True
+    st.rerun()
 
 # ============================================================
 # Display results
