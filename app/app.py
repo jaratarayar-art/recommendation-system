@@ -669,6 +669,59 @@ render_html(
         color:white;
     }
 
+    /* ---------- Forms and secondary views ---------- */
+    div[data-testid="stAlert"]{
+        border-radius: 14px !important;
+        border-left-width: 4px !important;
+    }
+    div[data-testid="stTabs"] [data-baseweb="tab-list"]{
+        gap: .45rem;
+        padding: .35rem;
+        background: rgba(10,92,63,0.07);
+        border-radius: 14px;
+    }
+    div[data-testid="stTabs"] button[data-baseweb="tab"]{
+        min-height: 2.5rem;
+        padding: .45rem .9rem;
+        border-radius: 10px;
+        transition: background .15s ease, color .15s ease;
+    }
+    div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"]{
+        background: var(--meridian-700);
+        color: white !important;
+        box-shadow: 0 6px 16px -10px rgba(10,92,63,0.8);
+    }
+    div[data-testid="stDataFrame"]{
+        border: 1px solid rgba(10,92,63,0.14);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 10px 24px -20px rgba(10,92,63,0.5);
+    }
+    div[data-testid="stRadio"] [role="radiogroup"]{
+        gap: .35rem;
+    }
+    div[data-testid="stRadio"] label{
+        border: 1px solid rgba(10,92,63,0.16);
+        border-radius: 10px;
+        padding: .2rem .55rem;
+        background: rgba(255,255,255,0.5);
+    }
+    div[data-testid="stRadio"] label:has(input:checked){
+        background: var(--meridian-100);
+        border-color: var(--meridian-500);
+    }
+    div[data-testid="stForm"]{
+        padding: 1rem 1.1rem .7rem;
+        border: 1px solid rgba(10,92,63,0.12);
+        border-radius: 16px;
+        background: rgba(255,255,255,0.5);
+    }
+    [data-testid="stSidebar"] .stForm{
+        padding: 0;
+        border: 0;
+        background: transparent;
+    }
+
     /* ---------- Metrics ---------- */
     div[data-testid="stMetric"]{
         background: #ffffff;
@@ -746,6 +799,16 @@ render_html(
         background: #ffffff !important;
         border: 1px solid rgba(10,92,63,0.12) !important;
         border-radius: 14px !important;
+    }
+
+    [data-theme="dark"] div[data-testid="stTabs"] [data-baseweb="tab-list"],
+    [data-theme="dark"] div[data-testid="stForm"]{
+        background: #14231e !important;
+        border-color: #2b5141 !important;
+    }
+    [data-theme="dark"] div[data-testid="stRadio"] label{
+        background: #172b24 !important;
+        border-color: #3b755a !important;
     }
 
     /* ---------- Responsive: tablet / mobile ---------- */
@@ -1275,11 +1338,17 @@ with tab_mandatory:
         '<div class="section-title"><span class="dot"></span>วิชาบังคับที่ใช้ตรวจสอบ</div>'
     )
     if mandatory_courses:
+        st.caption(
+            f"ระบบใช้วิชาบังคับจำนวน {len(mandatory_courses)} วิชา "
+            "เพื่อกรองวิชาเสรีที่ไม่ชนตารางเรียนและตารางสอบ"
+        )
         rows = []
         for cid, c in mandatory_courses.items():
             schedule = ", ".join(f"{d} {s}-{e}" for d, s, e in c["classes"])
             rows.append({"รหัสวิชา": cid, "ชื่อวิชา": c["name"], "ตารางเรียน": schedule})
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    else:
+        st.info("ยังไม่มีข้อมูลวิชาบังคับสำหรับการค้นหาครั้งนี้")
 
 # ---------------- Tab: Filter log ----------------
 with tab_filter:
@@ -1287,6 +1356,12 @@ with tab_filter:
         '<div class="section-title"><span class="dot"></span>ตรวจสอบตารางเรียน / Midterm / Final</div>'
     )
     if filter_log:
+        passed_count = sum(1 for item in filter_log if item["passed"])
+        failed_count = len(filter_log) - passed_count
+        passed_col, failed_col = st.columns(2)
+        passed_col.metric("ผ่านเงื่อนไข", passed_count)
+        failed_col.metric("ไม่ผ่านเงื่อนไข", failed_count)
+        st.caption("เปิดดูรายการด้านล่างเพื่อทราบเหตุผลของวิชาที่ไม่ผ่านเงื่อนไข")
         for f in filter_log:
             status = '<span class="pass-tag">✅ ผ่าน</span>' if f["passed"] else '<span class="fail-tag">❌ ไม่ผ่าน</span>'
             reasons_html = ""
@@ -1303,3 +1378,5 @@ with tab_filter:
                 </div>
                 """
             )
+    else:
+        st.info("ยังไม่มีข้อมูลการตรวจสอบตารางเรียน")
