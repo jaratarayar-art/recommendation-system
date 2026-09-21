@@ -433,6 +433,12 @@ render_html(
     div[data-baseweb="popover"] div{
         color: var(--ink) !important;
     }
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] [role="radiogroup"]{
+        gap: .25rem !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label{
+        margin-right: .15rem !important;
+    }
 
     /* ---------- Streamlit dark theme ---------- */
     html[data-theme="dark"],
