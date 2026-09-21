@@ -869,8 +869,6 @@ if "satisfaction_submitted" not in st.session_state:
     st.session_state.satisfaction_submitted = False
 if "satisfaction_reset_requested" not in st.session_state:
     st.session_state.satisfaction_reset_requested = False
-if "mobile_sidebar_closed" not in st.session_state:
-    st.session_state.mobile_sidebar_closed = False
 
 
 def reset_satisfaction_form_state():
@@ -895,25 +893,6 @@ render_html(
     """
 )
 st.info("แนะนำให้เปลี่ยนธีมของ Streamlit เป็น Light mode เพื่อให้อ่านข้อความและใช้งานได้ชัดเจนที่สุด")
-
-if st.session_state.mobile_sidebar_closed:
-    render_html(
-        """
-        <div class="mobile-sidebar-closed-marker"></div>
-        <style>
-        @media (max-width: 900px){
-            section[data-testid="stSidebar"]{
-                transform: translateX(-110%) !important;
-                visibility: hidden !important;
-                pointer-events: none !important;
-            }
-        }
-        </style>
-        """
-    )
-    if st.button("เปิดช่องค้นหาอีกครั้ง", key="reopen_mobile_search"):
-        st.session_state.mobile_sidebar_closed = False
-        st.rerun()
 
 average_rating, total_reviews, topic_averages = get_feedback_summary()
 if total_reviews:
@@ -1096,8 +1075,6 @@ if submitted:
         st.warning("⚠️ กรุณากรอกคำค้นหาความสนใจอย่างน้อย 1 คำ เพื่อผลลัพธ์ที่แม่นยำขึ้น")
 
     reset_satisfaction_form_state()
-    st.session_state.mobile_sidebar_closed = True
-
     with st.spinner("กำลังประมวลผล TF-IDF และ Collaborative Filtering..."):
         payload, errors = run_recommendation(major, semester, keyword1, keyword2, keyword3)
 
@@ -1118,21 +1095,6 @@ if submitted:
         st.session_state.results = payload.get("result")
         for e in errors:
             st.error(f"❌ {e}")
-
-if st.session_state.mobile_sidebar_closed:
-    render_html(
-        """
-        <style>
-        @media (max-width: 900px){
-            section[data-testid="stSidebar"]{
-                transform: translateX(-110%) !important;
-                visibility: hidden !important;
-                pointer-events: none !important;
-            }
-        }
-        </style>
-        """
-    )
 
 # ============================================================
 # Display results
