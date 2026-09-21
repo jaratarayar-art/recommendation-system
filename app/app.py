@@ -1267,13 +1267,6 @@ with tab_result:
                 """
             )
 
-        st.download_button(
-            "⬇️ ดาวน์โหลดผลลัพธ์ (CSV)",
-            data=result.to_csv(index=False).encode("utf-8-sig"),
-            file_name="recommended_electives.csv",
-            mime="text/csv",
-        )
-
         render_satisfaction_survey(result, meta)
 
 # ---------------- Tab: Mandatory courses ----------------
