@@ -1101,10 +1101,11 @@ def render_satisfaction_survey(result, search_meta):
         topic_ratings = []
         for index, topic in enumerate(SATISFACTION_TOPICS, start=1):
             topic_ratings.append(
-                st.selectbox(
+                st.radio(
                     f"{index}. {topic}",
                     options=[1, 2, 3, 4, 5],
-                    format_func=lambda score: f"{'★' * score} ({score}/5)",
+                    format_func=lambda score: "★" * score,
+                    horizontal=True,
                     key=f"satisfaction_topic_{index}",
                 )
             )
