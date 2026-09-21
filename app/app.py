@@ -950,22 +950,29 @@ with st.sidebar:
         st.markdown("**คำค้นหาความสนใจ (3 คำ)**")
         keyword1 = st.selectbox(
             "คำค้นหาที่ 1",
-            options=KEYWORD_SUGGESTIONS,
-            format_func=lambda keyword: keyword or "พิมพ์เพื่อค้นหาคำแนะนำ...",
+            options=[keyword for keyword in KEYWORD_SUGGESTIONS if keyword],
+            index=None,
+            placeholder="พิมพ์เพื่อค้นหาคำแนะนำ...",
             help="คลิกช่องแล้วพิมพ์ เช่น ก, ง หรือ A เพื่อกรองคำแนะนำ จากนั้นเลือกคำที่ต้องการ",
         )
         keyword2 = st.selectbox(
             "คำค้นหาที่ 2",
-            options=KEYWORD_SUGGESTIONS,
-            format_func=lambda keyword: keyword or "พิมพ์เพื่อค้นหาคำแนะนำ...",
+            options=[keyword for keyword in KEYWORD_SUGGESTIONS if keyword],
+            index=None,
+            placeholder="พิมพ์เพื่อค้นหาคำแนะนำ...",
             help="คลิกช่องแล้วพิมพ์เพื่อกรองคำแนะนำ แล้วเลือกคำที่ต้องการ",
         )
         keyword3 = st.selectbox(
             "คำค้นหาที่ 3",
-            options=KEYWORD_SUGGESTIONS,
-            format_func=lambda keyword: keyword or "พิมพ์เพื่อค้นหาคำแนะนำ...",
+            options=[keyword for keyword in KEYWORD_SUGGESTIONS if keyword],
+            index=None,
+            placeholder="พิมพ์เพื่อค้นหาคำแนะนำ...",
             help="คลิกช่องแล้วพิมพ์เพื่อกรองคำแนะนำ แล้วเลือกคำที่ต้องการ",
         )
+
+        keyword1 = keyword1 or ""
+        keyword2 = keyword2 or ""
+        keyword3 = keyword3 or ""
 
         submitted = st.form_submit_button("✨ ค้นหาวิชาเสรี")
 
