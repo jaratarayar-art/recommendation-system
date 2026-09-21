@@ -1107,7 +1107,7 @@ def render_satisfaction_survey(result, search_meta):
                 st.radio(
                     f"{index}. {topic}",
                     options=[1, 2, 3, 4, 5],
-                    format_func=lambda score: "★" * score,
+                    format_func=lambda score: str(score),
                     horizontal=True,
                     key=f"satisfaction_topic_{index}",
                 )
@@ -1144,7 +1144,8 @@ def render_satisfaction_survey(result, search_meta):
         )
     elif st.session_state.satisfaction_rating is not None:
         st.info(
-            f"คุณให้คะแนนความพึงพอใจ {'★' * st.session_state.satisfaction_rating} แล้ว"
+            f"คุณส่งแบบประเมินแล้ว คะแนนเฉลี่ยของคุณคือ "
+            f"{st.session_state.satisfaction_rating}/5"
         )
 
     if st.session_state.satisfaction_submitted:
