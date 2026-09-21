@@ -1118,6 +1118,7 @@ def render_satisfaction_survey(result, search_meta):
                     options=[1, 2, 3, 4, 5],
                     format_func=lambda score: str(score),
                     horizontal=True,
+                    index=None,
                     key=f"satisfaction_topic_{index}",
                 )
             )
@@ -1132,6 +1133,10 @@ def render_satisfaction_survey(result, search_meta):
         )
 
     if feedback_submitted and not st.session_state.satisfaction_submitted:
+        if any(score is None for score in topic_ratings):
+            st.warning("ยังประเมินไม่ครบทุกข้อ กรุณาเลือกคะแนนให้ครบทั้ง 5 ข้อก่อนส่ง")
+            return
+
         st.session_state.satisfaction_rating = round(sum(topic_ratings) / len(topic_ratings))
         st.session_state.satisfaction_comment = comment
         st.session_state.satisfaction_submitted = True
