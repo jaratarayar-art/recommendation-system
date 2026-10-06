@@ -6,11 +6,35 @@ from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from streamlit.errors import StreamlitSecretNotFoundError
+import streamlit as st
+
 
 DATABASE_PATH = Path(__file__).resolve().parent / "feedback.db"
-SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 TOPIC_COLUMNS = [f"topic_{index}" for index in range(1, 9)]
+SURVEY_TOPIC_COLUMNS = TOPIC_COLUMNS[1:5]
+FEEDBACK_RECORD_COLUMNS = [
+    "id",
+    "created_at",
+    "major",
+    "semester",
+    "comment",
+    *SURVEY_TOPIC_COLUMNS,
+]
+
+
+def get_setting(name):
+    value = os.getenv(name)
+    if value:
+        return value
+    try:
+        return st.secrets.get(name, "")
+    except StreamlitSecretNotFoundError:
+        return ""
+
+
+SUPABASE_URL = get_setting("SUPABASE_URL").rstrip("/")
+SUPABASE_KEY = get_setting("SUPABASE_KEY")
 
 
 def using_supabase():
@@ -96,7 +120,7 @@ def save_feedback(topic_ratings, comment, major, semester, keywords, recommended
             "keywords": keywords,
             "recommended_courses": recommended_courses,
         }
-        payload.update(dict(zip(TOPIC_COLUMNS, topic_ratings)))
+        payload.update(dict(zip(SURVEY_TOPIC_COLUMNS, topic_ratings)))
         supabase_request(
             "POST",
             "satisfaction_feedback",
@@ -119,7 +143,7 @@ def save_feedback(topic_ratings, comment, major, semester, keywords, recommended
                 semester,
                 keywords,
                 recommended_courses,
-                *topic_ratings,
+                *(0, *topic_ratings, 0, 0, 0),
             ),
         )
         connection.commit()
@@ -130,7 +154,7 @@ def get_feedback_summary():
         rows = supabase_request(
             "GET",
             "satisfaction_feedback",
-            query={"select": "rating," + ",".join(TOPIC_COLUMNS)},
+            query={"select": "rating," + ",".join(SURVEY_TOPIC_COLUMNS)},
         ) or []
     else:
         with sqlite3.connect(DATABASE_PATH) as connection:
@@ -138,18 +162,18 @@ def get_feedback_summary():
             rows = [
                 dict(row)
                 for row in connection.execute(
-                    "SELECT rating, " + ", ".join(TOPIC_COLUMNS) + " FROM satisfaction_feedback"
+                    "SELECT rating, " + ", ".join(SURVEY_TOPIC_COLUMNS) + " FROM satisfaction_feedback"
                 ).fetchall()
             ]
 
     topic_averages = []
-    for column in TOPIC_COLUMNS:
+    for column in SURVEY_TOPIC_COLUMNS:
         scores = [row.get(column) or 0 for row in rows if row.get(column)]
         topic_averages.append(sum(scores) / len(scores) if scores else None)
 
     review_scores = []
     for row in rows:
-        topic_scores = [row.get(column) or 0 for column in TOPIC_COLUMNS]
+        topic_scores = [row.get(column) or 0 for column in SURVEY_TOPIC_COLUMNS]
         if any(topic_scores):
             review_scores.append(sum(topic_scores) / len([score for score in topic_scores if score]))
         elif row.get("rating") is not None:
@@ -157,3 +181,24 @@ def get_feedback_summary():
 
     average_rating = sum(review_scores) / len(review_scores) if review_scores else None
     return average_rating, len(rows), topic_averages
+
+
+def get_feedback_records():
+    if using_supabase():
+        return supabase_request(
+            "GET",
+            "satisfaction_feedback",
+            query={
+                "select": ",".join(FEEDBACK_RECORD_COLUMNS),
+                "order": "created_at.desc",
+                "limit": 1000,
+            },
+        ) or []
+
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        connection.row_factory = sqlite3.Row
+        rows = connection.execute(
+            "SELECT " + ", ".join(FEEDBACK_RECORD_COLUMNS) +
+            " FROM satisfaction_feedback ORDER BY created_at DESC"
+        ).fetchall()
+        return [dict(row) for row in rows]

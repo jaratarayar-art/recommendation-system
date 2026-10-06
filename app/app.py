@@ -20,7 +20,13 @@ from course_data import (
     class_conflict,
     exam_conflict,
 )
-from feedback_database import initialize_database, get_feedback_summary, save_feedback
+from feedback_database import (
+    get_feedback_records,
+    get_feedback_summary,
+    initialize_database,
+    save_feedback,
+    using_supabase,
+)
 
 initialize_database()
 
@@ -362,7 +368,6 @@ KEYWORD_SUGGESTIONS = [
 ]
 
 SATISFACTION_TOPICS = [
-    "ระบบสามารถแนะนำคู่รายวิชาเลือกเสรีที่ไม่ซ้อนทับกับตารางเรียนและตารางสอบ",
     "ผลการแนะนำคู่รายวิชามีความสอดคล้องกับความสนใจของผู้ใช้งาน",
     "ระบบช่วยให้สามารถวางแผนการลงทะเบียนเรียนรายวิชาเลือกเสรีได้สะดวกขึ้น",
     "ระบบแนะนำมีขั้นตอนการใช้งานที่เข้าใจง่าย",
@@ -921,6 +926,11 @@ if st.session_state.mobile_sidebar_closed:
         st.rerun()
 
 average_rating, total_reviews, topic_averages = get_feedback_summary()
+if not using_supabase():
+    st.warning(
+        f"หน้านี้ยังไม่ได้เชื่อมต่อ Supabase และกำลังใช้ฐานข้อมูลในเครื่อง "
+        f"({total_reviews} รีวิว) ข้อมูลใน Supabase ไม่ได้ถูกลบ แต่ยังไม่ถูกโหลดมาแสดง"
+    )
 if total_reviews:
     st.markdown("### 📊 ภาพรวมความพึงพอใจของผู้ใช้งาน")
     average_col, review_col = st.columns(2)
@@ -1161,7 +1171,7 @@ def render_satisfaction_survey(result, search_meta):
     )
     st.markdown(
         "โปรดอ่านข้อความประเมินประสิทธิภาพและความพึงพอใจของระบบในแต่ละข้อ "
-        "แล้วกดเลือกหมายเลข 1 ถึง 5 ที่ตรงกับความคิดเห็นของท่านมากที่สุด"
+        "แล้วกดเลือกหมายเลข 1 ถึง 5 ที่ตรงกับความคิดเห็นของท่านมากที่สุด (รวม 4 ข้อ)"
     )
     st.markdown("**ระดับคะแนน:**")
     st.markdown("5 หมายถึง พึงพอใจ/เห็นด้วย ในระดับ **มากที่สุด**")
@@ -1195,7 +1205,7 @@ def render_satisfaction_survey(result, search_meta):
 
     if feedback_submitted and not st.session_state.satisfaction_submitted:
         if any(score is None for score in topic_ratings):
-            st.warning("ยังประเมินไม่ครบทุกข้อ กรุณาเลือกคะแนนให้ครบทั้ง 5 ข้อก่อนส่ง")
+            st.warning("ยังประเมินไม่ครบทุกข้อ กรุณาเลือกคะแนนให้ครบทั้ง 4 ข้อก่อนส่ง")
             return
 
         st.session_state.satisfaction_rating = round(sum(topic_ratings) / len(topic_ratings))
@@ -1245,8 +1255,46 @@ def render_satisfaction_survey(result, search_meta):
                             f"{topic_average:.2f} / 5" if topic_average else "ยังไม่มีข้อมูล",
                         )
                         topic_col.caption(SATISFACTION_TOPICS[topic_index])
+        with st.expander(f"ดูข้อมูลแบบประเมินทั้งหมด ({total_reviews} คน)"):
+            feedback_frame = pd.DataFrame(get_feedback_records())
+            if not feedback_frame.empty:
+                feedback_frame = feedback_frame.rename(
+                    columns={
+                        "created_at": "วันที่ประเมิน",
+                        "major": "สาขา",
+                        "semester": "ภาคการศึกษา",
+                        "topic_2": "ข้อ 1",
+                        "topic_3": "ข้อ 2",
+                        "topic_4": "ข้อ 3",
+                        "topic_5": "ข้อ 4",
+                        "comment": "ข้อเสนอแนะ",
+                    }
+                )
+                st.dataframe(
+                    feedback_frame[
+                        [
+                            "วันที่ประเมิน",
+                            "สาขา",
+                            "ภาคการศึกษา",
+                            "ข้อ 1",
+                            "ข้อ 2",
+                            "ข้อ 3",
+                            "ข้อ 4",
+                            "ข้อเสนอแนะ",
+                        ]
+                    ],
+                    use_container_width=True,
+                    hide_index=True,
+                )
+            else:
+                st.info("ยังไม่พบรายการแบบประเมิน")
     else:
         st.info("ยังไม่มีข้อมูลคะแนนความพึงพอใจ")
+        if not using_supabase():
+            st.warning(
+                "ยังไม่ได้เชื่อมต่อ Supabase จึงแสดงเฉพาะข้อมูลในเครื่อง "
+                "กรุณาตั้งค่า SUPABASE_URL และ SUPABASE_KEY ใน Secrets ของแอป"
+            )
 
 
 # --- Summary metrics ---
