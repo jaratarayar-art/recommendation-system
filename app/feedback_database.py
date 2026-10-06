@@ -13,14 +13,6 @@ import streamlit as st
 DATABASE_PATH = Path(__file__).resolve().parent / "feedback.db"
 TOPIC_COLUMNS = [f"topic_{index}" for index in range(1, 9)]
 SURVEY_TOPIC_COLUMNS = TOPIC_COLUMNS[1:5]
-FEEDBACK_RECORD_COLUMNS = [
-    "id",
-    "created_at",
-    "major",
-    "semester",
-    "comment",
-    *SURVEY_TOPIC_COLUMNS,
-]
 
 
 def get_setting(name):
@@ -151,20 +143,24 @@ def save_feedback(topic_ratings, comment, major, semester, keywords, recommended
 
 def get_feedback_summary():
     if using_supabase():
-        rows = supabase_request(
+        summary = supabase_request(
             "GET",
-            "satisfaction_feedback",
-            query={"select": "rating," + ",".join(SURVEY_TOPIC_COLUMNS)},
-        ) or []
-    else:
-        with sqlite3.connect(DATABASE_PATH) as connection:
-            connection.row_factory = sqlite3.Row
-            rows = [
-                dict(row)
-                for row in connection.execute(
-                    "SELECT rating, " + ", ".join(SURVEY_TOPIC_COLUMNS) + " FROM satisfaction_feedback"
-                ).fetchall()
-            ]
+            "rpc/get_satisfaction_summary",
+        ) or {}
+        return (
+            summary.get("average_rating"),
+            summary.get("total_reviews", 0),
+            summary.get("topic_averages") or [None] * len(SURVEY_TOPIC_COLUMNS),
+        )
+
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        connection.row_factory = sqlite3.Row
+        rows = [
+            dict(row)
+            for row in connection.execute(
+                "SELECT rating, " + ", ".join(SURVEY_TOPIC_COLUMNS) + " FROM satisfaction_feedback"
+            ).fetchall()
+        ]
 
     topic_averages = []
     for column in SURVEY_TOPIC_COLUMNS:
@@ -181,24 +177,3 @@ def get_feedback_summary():
 
     average_rating = sum(review_scores) / len(review_scores) if review_scores else None
     return average_rating, len(rows), topic_averages
-
-
-def get_feedback_records():
-    if using_supabase():
-        return supabase_request(
-            "GET",
-            "satisfaction_feedback",
-            query={
-                "select": ",".join(FEEDBACK_RECORD_COLUMNS),
-                "order": "created_at.desc",
-                "limit": 1000,
-            },
-        ) or []
-
-    with sqlite3.connect(DATABASE_PATH) as connection:
-        connection.row_factory = sqlite3.Row
-        rows = connection.execute(
-            "SELECT " + ", ".join(FEEDBACK_RECORD_COLUMNS) +
-            " FROM satisfaction_feedback ORDER BY created_at DESC"
-        ).fetchall()
-        return [dict(row) for row in rows]

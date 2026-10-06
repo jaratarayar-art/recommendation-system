@@ -21,7 +21,6 @@ from course_data import (
     exam_conflict,
 )
 from feedback_database import (
-    get_feedback_records,
     get_feedback_summary,
     initialize_database,
     save_feedback,
@@ -1255,39 +1254,6 @@ def render_satisfaction_survey(result, search_meta):
                             f"{topic_average:.2f} / 5" if topic_average else "ยังไม่มีข้อมูล",
                         )
                         topic_col.caption(SATISFACTION_TOPICS[topic_index])
-        with st.expander(f"ดูข้อมูลแบบประเมินทั้งหมด ({total_reviews} คน)"):
-            feedback_frame = pd.DataFrame(get_feedback_records())
-            if not feedback_frame.empty:
-                feedback_frame = feedback_frame.rename(
-                    columns={
-                        "created_at": "วันที่ประเมิน",
-                        "major": "สาขา",
-                        "semester": "ภาคการศึกษา",
-                        "topic_2": "ข้อ 1",
-                        "topic_3": "ข้อ 2",
-                        "topic_4": "ข้อ 3",
-                        "topic_5": "ข้อ 4",
-                        "comment": "ข้อเสนอแนะ",
-                    }
-                )
-                st.dataframe(
-                    feedback_frame[
-                        [
-                            "วันที่ประเมิน",
-                            "สาขา",
-                            "ภาคการศึกษา",
-                            "ข้อ 1",
-                            "ข้อ 2",
-                            "ข้อ 3",
-                            "ข้อ 4",
-                            "ข้อเสนอแนะ",
-                        ]
-                    ],
-                    use_container_width=True,
-                    hide_index=True,
-                )
-            else:
-                st.info("ยังไม่พบรายการแบบประเมิน")
     else:
         st.info("ยังไม่มีข้อมูลคะแนนความพึงพอใจ")
         if not using_supabase():

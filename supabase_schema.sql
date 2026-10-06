@@ -41,8 +41,55 @@ with check (true);
 drop policy if exists "Allow anonymous feedback summary"
 on public.satisfaction_feedback;
 
-create policy "Allow anonymous feedback summary"
-on public.satisfaction_feedback
-for select
-to anon
-using (true);
+create or replace function public.get_satisfaction_summary()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+    with normalized_scores as (
+        select
+            rating,
+            nullif(topic_2, 0)::numeric as score_1,
+            nullif(topic_3, 0)::numeric as score_2,
+            nullif(topic_4, 0)::numeric as score_3,
+            nullif(topic_5, 0)::numeric as score_4
+        from public.satisfaction_feedback
+    ),
+    review_scores as (
+        select
+            case
+                when score_1 is not null or score_2 is not null
+                    or score_3 is not null or score_4 is not null then
+                    (coalesce(score_1, 0) + coalesce(score_2, 0)
+                        + coalesce(score_3, 0) + coalesce(score_4, 0))
+                    / nullif(
+                        (case when score_1 is not null then 1 else 0 end)
+                        + (case when score_2 is not null then 1 else 0 end)
+                        + (case when score_3 is not null then 1 else 0 end)
+                        + (case when score_4 is not null then 1 else 0 end),
+                        0
+                    )
+                else rating::numeric
+            end as review_average,
+            score_1,
+            score_2,
+            score_3,
+            score_4
+        from normalized_scores
+    )
+    select jsonb_build_object(
+        'average_rating', avg(review_average),
+        'total_reviews', count(*),
+        'topic_averages', jsonb_build_array(
+            avg(score_1), avg(score_2), avg(score_3), avg(score_4)
+        )
+    )
+    from review_scores;
+$$;
+
+revoke all on function public.get_satisfaction_summary() from public;
+revoke all on function public.get_satisfaction_summary() from anon;
+revoke all on function public.get_satisfaction_summary() from authenticated;
+grant execute on function public.get_satisfaction_summary() to anon;
