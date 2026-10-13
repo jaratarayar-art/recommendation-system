@@ -2,7 +2,7 @@ import json
 import os
 from pathlib import Path
 import sqlite3
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -13,6 +13,10 @@ import streamlit as st
 DATABASE_PATH = Path(__file__).resolve().parent / "feedback.db"
 TOPIC_COLUMNS = [f"topic_{index}" for index in range(1, 9)]
 SURVEY_TOPIC_COLUMNS = TOPIC_COLUMNS[1:5]
+
+
+class SupabaseConnectionError(RuntimeError):
+    pass
 
 
 def get_setting(name):
@@ -59,6 +63,10 @@ def supabase_request(method, path, payload=None, query=None):
     except HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"Supabase request failed ({error.code}): {detail}") from error
+    except URLError as error:
+        raise SupabaseConnectionError(
+            "Unable to reach Supabase. Check the configured project URL and network availability."
+        ) from error
 
 
 def initialize_database():
@@ -143,10 +151,13 @@ def save_feedback(topic_ratings, comment, major, semester, keywords, recommended
 
 def get_feedback_summary():
     if using_supabase():
-        summary = supabase_request(
-            "GET",
-            "rpc/get_satisfaction_summary",
-        ) or {}
+        try:
+            summary = supabase_request(
+                "GET",
+                "rpc/get_satisfaction_summary",
+            ) or {}
+        except SupabaseConnectionError:
+            return None, None, [None] * len(SURVEY_TOPIC_COLUMNS)
         return (
             summary.get("average_rating"),
             summary.get("total_reviews", 0),

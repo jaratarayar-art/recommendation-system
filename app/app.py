@@ -925,7 +925,13 @@ if st.session_state.mobile_sidebar_closed:
         st.rerun()
 
 average_rating, total_reviews, topic_averages = get_feedback_summary()
-if not using_supabase():
+if total_reviews is None:
+    st.error(
+        "เชื่อมต่อ Supabase ไม่สำเร็จ จึงยังโหลดคะแนนสรุปไม่ได้ "
+        "กรุณาตรวจ SUPABASE_URL ใน Secrets ของ Streamlit Cloud และสถานะโปรเจกต์ Supabase "
+        "ข้อมูลรีวิวเดิมไม่ได้ถูกลบ"
+    )
+elif not using_supabase():
     st.warning(
         f"หน้านี้ยังไม่ได้เชื่อมต่อ Supabase และกำลังใช้ฐานข้อมูลในเครื่อง "
         f"({total_reviews} รีวิว) ข้อมูลใน Supabase ไม่ได้ถูกลบ แต่ยังไม่ถูกโหลดมาแสดง"
@@ -1238,7 +1244,9 @@ def render_satisfaction_survey(result, search_meta):
             st.rerun()
 
     average_rating, total_reviews, topic_averages = get_feedback_summary()
-    if total_reviews:
+    if total_reviews is None:
+        st.warning("ยังแสดงผลสรุปแบบประเมินไม่ได้ เนื่องจากเชื่อมต่อ Supabase ไม่สำเร็จ")
+    elif total_reviews:
         average_col, review_col = st.columns(2)
         average_col.metric("คะแนนความพึงพอใจเฉลี่ย", f"{average_rating:.2f} / 5")
         review_col.metric("จำนวนผู้ประเมิน", f"{total_reviews} คน")
