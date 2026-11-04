@@ -68,8 +68,6 @@ def render_html(html: str):
 
 KEYWORD_SUGGESTIONS = [
    "",
-   "เรียนง่าย",
-   "A ง่าย",
    "ดาราศาสตร์",
    "สิ่งแวดล้อม",
    "มลพิษ",
